@@ -33,3 +33,4 @@ pandas
 gymnasium
 # temporary fix: E   AttributeError: module 'mpmath' has no attribute 'rational'
 mpmath<1.4
+jinja2>=3.1.6 # not directly required, pinned by Snyk to avoid a vulnerability

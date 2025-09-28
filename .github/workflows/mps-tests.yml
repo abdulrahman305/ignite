@@ -36,7 +36,7 @@ jobs:
         pytorch-channel: ["pytorch"]
         skip-distrib-tests: [1]
       fail-fast: false
-    runs-on: ["macos-m1-stable"]
+    runs-on: ["macos-14"]
     timeout-minutes: 60
 
     steps:
@@ -48,14 +48,14 @@ jobs:
           echo "::endgroup::"
 
       - name: Checkout repository (pytorch/test-infra)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Support the use case where we need to checkout someone's fork
           repository: pytorch/test-infra
           path: test-infra
 
       - name: Checkout repository (${{ github.repository }})
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Support the use case where we need to checkout someone's fork
           repository: ${{ github.repository }}
@@ -71,15 +71,21 @@ jobs:
       - name: Install uv
         shell: bash -l {0}
         run: |
-          conda shell.bash hook
+          eval "$(conda shell.bash hook)"
           conda activate $CONDA_ENV
           pip install uv
+
+      - name: Install GPG for Codecov
+        shell: bash -l {0}
+        run: |
+          # Install GPG which is required by codecov-action@v5
+          brew install gnupg
 
       - name: Install PyTorch
         if: ${{ matrix.pytorch-channel == 'pytorch' }}
         shell: bash -l {0}
         run: |
-          conda shell.bash hook
+          eval "$(conda shell.bash hook)"
           conda activate $CONDA_ENV
           uv pip install torch torchvision
 
@@ -87,7 +93,7 @@ jobs:
         if: ${{ matrix.pytorch-channel == 'pytorch-nightly' }}
         shell: bash -l {0}
         run: |
-          conda shell.bash hook
+          eval "$(conda shell.bash hook)"
           conda activate $CONDA_ENV
           uv pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cpu
 
@@ -95,7 +101,7 @@ jobs:
         shell: bash -l {0}
         working-directory: ${{ github.repository }}
         run: |
-          conda shell.bash hook
+          eval "$(conda shell.bash hook)"
           conda activate $CONDA_ENV
           # TODO: We add set -xe to explicitly fail the CI if one of the commands is failing.
           # Somehow the step is passing even if a subcommand failed
@@ -123,14 +129,14 @@ jobs:
         shell: bash -l {0}
         working-directory: ${{ github.repository }}
         run: |
-          conda shell.bash hook
+          eval "$(conda shell.bash hook)"
           conda activate $CONDA_ENV
           SKIP_DISTRIB_TESTS=${{ matrix.skip-distrib-tests }} bash tests/run_cpu_tests.sh
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          file: ${{ github.repository }}/coverage.xml
+          files: ${{ github.repository }}/coverage.xml
           flags: mps
           fail_ci_if_error: false
 
@@ -138,6 +144,6 @@ jobs:
         shell: bash -l {0}
         working-directory: ${{ github.repository }}
         run: |
-          conda shell.bash hook
+          eval "$(conda shell.bash hook)"
           conda activate $CONDA_ENV
           python examples/mnist/mnist.py --epochs=1
